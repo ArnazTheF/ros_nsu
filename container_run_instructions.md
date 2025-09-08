@@ -1,3 +1,8 @@
+Сначала в терминале пишем:
+```bash
+xhost +localhost
+```
+Затем:
 ```bash
 docker run -it --rm \
     -e DISPLAY=host.docker.internal:0 \
@@ -9,4 +14,8 @@ docker run -it --rm \
 Затем в контейнере:
 ```bash
 source /opt/ros/jazzy/setup.bash
+```
+Для последущих открытий контейнера:
+```bash
+docker exec -it ros_jazzy_container bash
 ```
