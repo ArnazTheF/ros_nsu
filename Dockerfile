@@ -3,4 +3,5 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-turtlesim \
     ros-jazzy-rqt \
     ros-jazzy-rqt-common-plugins \
+    ncal \
     && rm -rf /var/lib/apt/lists/*
