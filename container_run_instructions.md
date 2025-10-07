@@ -4,7 +4,7 @@ xhost +localhost
 ```
 Затем:
 ```bash
-docker run -it --rm \
+docker run -it \
     -e DISPLAY=host.docker.internal:0 \
     -e XAUTHORITY=/tmp/xauth \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
