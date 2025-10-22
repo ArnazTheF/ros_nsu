@@ -12,11 +12,11 @@ class CleaningActionClient(Node):
         self._action_client = ActionClient(self, CleaningTask, 'CleaningTask')
         self.get_logger().info('Cleaning Action Client has been started')
 
-    def send_goal(self, task_type, area_size=0.0, target_x=0.0, target_y=0.0):
+    def send_goal(self, task_type, area_size=3.0, target_x=0.0, target_y=0.0): 
         """Отправка цели на выполнение"""
         goal_msg = CleaningTask.Goal()
         goal_msg.task_type = task_type
-        goal_msg.area_size = area_size
+        goal_msg.area_size = area_size 
         goal_msg.target_x = target_x
         goal_msg.target_y = target_y
 
@@ -64,11 +64,10 @@ def main(args=None):
     
     action_client = CleaningActionClient()
     
-    # Последовательность команд: уборка квадрата 3x3 и возврат домой
+    # Последовательность команд: уборка квадрата и возврат домой
     try:
-        # Уборка квадрата 3x3 метра
         action_client.get_logger().info('Sending clean_square goal...')
-        action_client.send_goal('clean_square', area_size=3.0)
+        action_client.send_goal('clean_square', area_size=3.0) 
         
         rclpy.spin(action_client)
         

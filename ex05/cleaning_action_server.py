@@ -32,12 +32,12 @@ class CleaningActionServer(Node):
         
         # Текущая позиция черепахи
         self.current_pose = None
+        self.current_direction = 'right'  # Начальное направление
         self.get_logger().info('Cleaning Action Server has been started')
 
     def pose_callback(self, msg):
         """Сохраняем текущую позицию черепахи"""
         self.current_pose = msg
-        print(self.current_pose)
 
     def execute_callback(self, goal_handle):
         """Обработчик выполнения целей"""
@@ -53,33 +53,44 @@ class CleaningActionServer(Node):
             time.sleep(0.1)
         
         start_pose = self.current_pose
-        total_distance = 0.0
-        cleaned_points = 0
         
         if goal.task_type == 'clean_square':
-            # Уборка квадратной области
-            side_length = goal.area_size
-            sides_completed = 0
-            total_sides = 4
+            # Уборка квадратной области - ИСПРАВЛЕННАЯ ЛОГИКА
+            area_size = goal.area_size
+            step_size = 0.1  # Размер шага для спирали
             
-            while side_length > 0:
+            # Рассчитываем общее количество итераций на основе размера области
+            total_iterations = int(area_size / step_size) * 4
+            iterations_completed = 0
+            
+            current_size = area_size
+            
+            # Начинаем с направления вправо
+            self.current_direction = 'right'
+            
+            # Двигаемся по спирали, уменьшая размер на каждой итерации
+            while current_size > 0 and rclpy.ok():
                 if goal_handle.is_cancel_requested:
                     goal_handle.canceled()
                     result.success = False
                     return result
                 
-                # Движение вперед на длину стороны
-                success = self.move_forward(side_length, goal_handle, feedback)
+                # Движение вперед на ТЕКУЩУЮ длину
+                success = self.move_forward(current_size, goal_handle, feedback)
                 if not success:
                     result.success = False
                     return result
                 
-                # Поворот на 90 градусов
-                self.turn(90, goal_handle, feedback)
+                # Поворот в следующее направление по часовой стрелке
+                next_direction = self.get_next_direction_clockwise()
+                self.turn_to_direction(next_direction, goal_handle, feedback)
+                self.current_direction = next_direction
                 
-                sides_completed += 1
-                progress = int((sides_completed / total_sides) * 100)
-                cleaned_points = int((sides_completed / total_sides) * 100)
+                iterations_completed += 1
+                
+                # Расчет прогресса на основе выполненных итераций
+                progress = int((iterations_completed / total_iterations) * 100)
+                cleaned_points = progress
                 
                 # Публикуем feedback
                 feedback.progress_percent = progress
@@ -87,10 +98,12 @@ class CleaningActionServer(Node):
                 feedback.current_x = self.current_pose.x
                 feedback.current_y = self.current_pose.y
                 goal_handle.publish_feedback(feedback)
+                
+                # Уменьшаем размер для следующей итерации
+                current_size -= step_size
+                self.get_logger().info(f'Current size: {current_size:.2f}, Direction: {self.current_direction}, Progress: {progress}%')
             
-            total_distance = side_length * 4
-            side_length-=0.1
-            cleaned_points = 100
+            total_distance = area_size * total_iterations / 4
             
         elif goal.task_type == 'return_home':
             # Возвращение в домашнюю позицию
@@ -100,11 +113,10 @@ class CleaningActionServer(Node):
             success = self.move_to_position(target_x, target_y, goal_handle, feedback)
             total_distance = self.calculate_distance(
                 start_pose.x, start_pose.y, target_x, target_y)
-            cleaned_points = 0
             
             if success:
                 feedback.progress_percent = 100
-                feedback.current_cleaned_points = 0
+                feedback.current_cleaned_points = 100
                 goal_handle.publish_feedback(feedback)
             else:
                 result.success = False
@@ -117,11 +129,93 @@ class CleaningActionServer(Node):
         # Возвращаем успешный результат
         goal_handle.succeed()
         result.success = True
-        result.cleaned_points = cleaned_points
+        result.cleaned_points = 100
         result.total_distance = total_distance
         
         self.get_logger().info('Task completed successfully')
         return result
+
+    def get_next_direction_clockwise(self):
+        """Получить следующее направление по часовой стрелке"""
+        directions = ['right', 'down', 'left', 'up']
+        current_index = directions.index(self.current_direction)
+        next_index = (current_index + 1) % 4
+        return directions[next_index]
+
+    def turn_to_direction(self, target_direction, goal_handle, feedback):
+        """Поворот к указанному направлению (right, up, left, down)"""
+        if self.current_pose is None:
+            return
+        
+        # Углы для каждого направления в радианах
+        direction_angles = {
+            'right': 0.0,
+            'up': math.pi / 2,
+            'left': math.pi,
+            'down': 3 * math.pi / 2
+        }
+        
+        target_angle = direction_angles[target_direction]
+        current_angle = self.current_pose.theta
+        
+        # Нормализуем углы в диапазон [0, 2π]
+        current_angle = current_angle % (2 * math.pi)
+        if current_angle < 0:
+            current_angle += 2 * math.pi
+        
+        # Вычисляем минимальную разницу углов
+        angle_diff = target_angle - current_angle
+        
+        # Корректируем разницу для кратчайшего пути
+        if angle_diff > math.pi:
+            angle_diff -= 2 * math.pi
+        elif angle_diff < -math.pi:
+            angle_diff += 2 * math.pi
+        
+        self.get_logger().info(f'Turning from {self.current_direction} to {target_direction}, angle diff: {math.degrees(angle_diff):.1f}°')
+        
+        # Выполняем поворот
+        angular_speed = 0.5
+        angle_tolerance = 0.05
+        
+        start_time = time.time()
+        timeout = 5.0
+        
+        while rclpy.ok() and (time.time() - start_time) < timeout:
+            if goal_handle.is_cancel_requested:
+                return
+            
+            rclpy.spin_once(self, timeout_sec=0.01)
+            
+            if self.current_pose is None:
+                continue
+            
+            current_angle = self.current_pose.theta % (2 * math.pi)
+            if current_angle < 0:
+                current_angle += 2 * math.pi
+            
+            current_diff = target_angle - current_angle
+            if current_diff > math.pi:
+                current_diff -= 2 * math.pi
+            elif current_diff < -math.pi:
+                current_diff += 2 * math.pi
+            
+            if abs(current_diff) < angle_tolerance:
+                break
+            
+            twist = Twist()
+            if current_diff > 0:
+                twist.angular.z = angular_speed
+            else:
+                twist.angular.z = -angular_speed
+            
+            self.vel_publisher.publish(twist)
+            time.sleep(0.05)
+        
+        # Останавливаемся
+        twist = Twist()
+        self.vel_publisher.publish(twist)
+        time.sleep(0.2)
 
     def move_forward(self, distance, goal_handle, feedback):
         """Движение вперед на указанное расстояние"""
@@ -129,67 +223,39 @@ class CleaningActionServer(Node):
             return False
         
         start_x, start_y = self.current_pose.x, self.current_pose.y
-        print(start_x, start_y)
         distance_traveled = 0.0
+        
+        # Устанавливаем скорость
+        speed = 0.5
         
         while distance_traveled < distance and rclpy.ok():
             if goal_handle.is_cancel_requested:
                 return False
             
             rclpy.spin_once(self, timeout_sec=0.01)
+            
             # Публикуем команду движения
             twist = Twist()
-            twist.linear.x = 0.5  # Постоянная скорость
+            twist.linear.x = speed
             self.vel_publisher.publish(twist)
             
-            time.sleep(0.2)
+            time.sleep(0.1)
             
             # Обновляем пройденное расстояние
-            current_distance = math.sqrt(
-                (self.current_pose.x - start_x)**2 + 
-                (self.current_pose.y - start_y)**2)
-            distance_traveled = current_distance
-            print(self.current_pose.x, self.current_pose.y)
+            if self.current_pose:
+                current_distance = math.sqrt(
+                    (self.current_pose.x - start_x)**2 + 
+                    (self.current_pose.y - start_y)**2)
+                distance_traveled = current_distance
             
-            # Публикуем feedback
-            progress = int((distance_traveled / distance) * 25)  # 25% за сторону
-            feedback.progress_percent = min(100, progress)
-            feedback.current_cleaned_points = progress
-            feedback.current_x = self.current_pose.x
-            feedback.current_y = self.current_pose.y
-            goal_handle.publish_feedback(feedback)
-            
-            time.sleep(0.1)
+            time.sleep(0.05)
         
         # Останавливаемся
         twist = Twist()
         self.vel_publisher.publish(twist)
-        time.sleep(0.5)
+        time.sleep(0.1)
         
         return True
-
-    def turn(self, angle_degrees, goal_handle, feedback):
-        """Поворот на указанный угол в градусах"""
-        if self.current_pose is None:
-            return
-        
-        target_angle = self.current_pose.theta + math.radians(angle_degrees)
-        
-        while abs(self.current_pose.theta - target_angle) > 0.1 and rclpy.ok():
-            if goal_handle.is_cancel_requested:
-                return
-            rclpy.spin_once(self, timeout_sec=0.01)
-            # Публикуем команду поворота
-            twist = Twist()
-            twist.angular.z = 0.5 if angle_degrees > 0 else -0.5
-            self.vel_publisher.publish(twist)
-            
-            time.sleep(0.1)
-        
-        # Останавливаемся
-        twist = Twist()
-        self.vel_publisher.publish(twist)
-        time.sleep(0.5)
 
     def move_to_position(self, target_x, target_y, goal_handle, feedback):
         """Движение к указанной позиции"""
@@ -198,6 +264,7 @@ class CleaningActionServer(Node):
         
         total_distance = self.calculate_distance(
             self.current_pose.x, self.current_pose.y, target_x, target_y)
+        distance_traveled = 0.0
         
         while (self.calculate_distance(self.current_pose.x, self.current_pose.y, target_x, target_y) > 0.1 
                and rclpy.ok()):
@@ -221,7 +288,7 @@ class CleaningActionServer(Node):
                 twist.linear.x = 0.5
                 self.vel_publisher.publish(twist)
             
-            # Публикуем feedback
+            # Обновляем прогресс
             current_distance = self.calculate_distance(
                 self.current_pose.x, self.current_pose.y, target_x, target_y)
             progress = int(((total_distance - current_distance) / total_distance) * 100)
