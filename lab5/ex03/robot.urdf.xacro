@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="diff_drive_robot">
+
+  <!-- База -->
+  <xacro:property name="base_length" value="0.6"/>
+  <xacro:property name="base_width"  value="0.4"/>
+  <xacro:property name="base_height" value="0.15"/>
+
+  <!-- Колёса -->
+  <xacro:property name="wheel_radius" value="0.12"/>
+  <xacro:property name="wheel_width"  value="0.06"/>
+  <xacro:property name="wheel_offset_y" value="0.225"/>  <!-- 2*0.225 = 0.45 -->
+  <xacro:property name="wheel_offset_x" value="0.2"/>
+
+  <material name="blue"><color rgba="0 0.2 0.8 1"/></material>
+  <material name="black"><color rgba="0.05 0.05 0.05 1"/></material>
+
+  <!-- Корпус (центр корпуса на высоте wheel_radius, чтобы колёса стояли на земле) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+      <geometry><box size="${base_length} ${base_width} ${base_height}"/></geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+      <geometry><box size="${base_length} ${base_width} ${base_height}"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="8.0"/>
+      <inertia ixx="0.15" ixy="0" ixz="0" iyy="0.25" iyz="0" izz="0.3"/>
+    </inertial>
+  </link>
+
+  <!-- Макрос колеса -->
+  <xacro:macro name="wheel" params="name x y">
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="1.0"/>
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+      </inertial>
+    </link>
+
+    <!-- Колёса лежат на земле: z = wheel_radius (потому что base_link поднят на wheel_radius) -->
+    <joint name="${name}_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${name}"/>
+      <origin xyz="${x} ${y} 0" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- 4 колеса -->
+  <xacro:wheel name="front_left_wheel"  x="${wheel_offset_x}"  y="${wheel_offset_y}"/>
+  <xacro:wheel name="front_right_wheel" x="${wheel_offset_x}"  y="-${wheel_offset_y}"/>
+  <xacro:wheel name="rear_left_wheel"   x="-${wheel_offset_x}" y="${wheel_offset_y}"/>
+  <xacro:wheel name="rear_right_wheel"  x="-${wheel_offset_x}" y="-${wheel_offset_y}"/>
+
+  <!-- ВАЖНО: подключаем Gazebo-плагины (чтобы JointStatePublisher реально загрузился) -->
+  <xacro:include filename="robot.gazebo.xacro"/>
+
+</robot>

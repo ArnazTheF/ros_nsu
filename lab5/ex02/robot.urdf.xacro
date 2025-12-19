@@ -1,0 +1,185 @@
+<?xml version="1.0" ?>
+<robot name="differential_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===== КОНСТАНТЫ (PROPERTIES) ===== -->
+  <xacro:property name="base_length" value="0.8"/>
+  <xacro:property name="base_width" value="0.5"/>
+  <xacro:property name="base_height" value="0.2"/>
+  <xacro:property name="wheel_radius" value="0.1"/>
+  <xacro:property name="wheel_thickness" value="0.08"/>
+  <xacro:property name="wheel_separation" value="0.45"/>
+  <xacro:property name="base_mass" value="5.0"/>
+  <xacro:property name="wheel_mass" value="0.5"/>
+  <xacro:property name="caster_mass" value="0.2"/>
+
+  <!-- ===== МАТЕРИАЛЫ ===== -->
+  <material name="base_color">
+    <color rgba="0.2 0.2 0.2 1.0"/>
+  </material>
+
+  <material name="wheel_color">
+    <color rgba="0.1 0.1 0.1 1.0"/>
+  </material>
+
+  <material name="caster_color">
+    <color rgba="0.5 0.5 0.5 1.0"/>
+  </material>
+
+  <!-- ===== МАКРОС: ИНЕРЦИЯ ПРЯМОУГОЛЬНОГО БЛОКА ===== -->
+  <xacro:macro name="box_inertia" params="mass length width height">
+    <inertia ixx="${mass * (width*width + height*height) / 12}"
+             iyy="${mass * (length*length + height*height) / 12}"
+             izz="${mass * (length*length + width*width) / 12}"
+             ixy="0" ixz="0" iyz="0"/>
+  </xacro:macro>
+
+  <!-- ===== МАКРОС: ИНЕРЦИЯ ЦИЛИНДРА ===== -->
+  <xacro:macro name="cylinder_inertia" params="mass radius length">
+    <inertia ixx="${mass * radius * radius / 2}"
+             iyy="${mass * (3*radius*radius + length*length) / 12}"
+             izz="${mass * (3*radius*radius + length*length) / 12}"
+             ixy="0" ixz="0" iyz="0"/>
+  </xacro:macro>
+
+  <!-- ===== МАКРОС: ИНЕРЦИЯ СФЕРЫ ===== -->
+  <xacro:macro name="sphere_inertia" params="mass radius">
+    <inertia ixx="${2 * mass * radius * radius / 5}"
+             iyy="${2 * mass * radius * radius / 5}"
+             izz="${2 * mass * radius * radius / 5}"
+             ixy="0" ixz="0" iyz="0"/>
+  </xacro:macro>
+
+  <!-- ===== ЗВЕНО: BASE_FOOTPRINT ===== -->
+  <link name="base_footprint"/>
+
+  <!-- ===== ЗВЕНО: BASE_LINK ===== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <material name="base_color"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="${base_mass}"/>
+      <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+      <xacro:box_inertia mass="${base_mass}" length="${base_length}" width="${base_width}" height="${base_height}"/>
+    </inertial>
+  </link>
+
+  <!-- ===== СОЧЛЕНЕНИЕ: base_footprint → base_link ===== -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${base_height/2}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===== ЗВЕНО: ЛЕВОЕ КОЛЕСО ===== -->
+  <link name="wheel_left">
+    <visual>
+      <geometry>
+        <cylinder length="${wheel_thickness}" radius="${wheel_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <material name="wheel_color"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <cylinder length="${wheel_thickness}" radius="${wheel_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <xacro:cylinder_inertia mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_thickness}"/>
+    </inertial>
+  </link>
+
+  <!-- ===== СОЧЛЕНЕНИЕ: base_link → wheel_left ===== -->
+  <joint name="wheel_left_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="wheel_left"/>
+    <origin xyz="${-base_length/5} ${wheel_separation/2} ${base_height/2}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10" effort="50" velocity="10"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <!-- ===== ЗВЕНО: ПРАВОЕ КОЛЕСО ===== -->
+  <link name="wheel_right">
+    <visual>
+      <geometry>
+        <cylinder length="${wheel_thickness}" radius="${wheel_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <material name="wheel_color"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <cylinder length="${wheel_thickness}" radius="${wheel_radius}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="${wheel_mass}"/>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <xacro:cylinder_inertia mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_thickness}"/>
+    </inertial>
+  </link>
+
+  <!-- ===== СОЧЛЕНЕНИЕ: base_link → wheel_right ===== -->
+  <joint name="wheel_right_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="wheel_right"/>
+    <origin xyz="${-base_length/5} ${-wheel_separation/2} ${base_height/2}" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-10" upper="10" effort="50" velocity="10"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <!-- ===== ЗВЕНО: ОПОРНОЕ КОЛЕСО (CASTER) ===== -->
+  <link name="caster_wheel">
+    <visual>
+      <geometry>
+        <sphere radius="${wheel_radius/2}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="caster_color"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <sphere radius="${wheel_radius/2}"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </collision>
+
+    <inertial>
+      <mass value="${caster_mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <xacro:sphere_inertia mass="${caster_mass}" radius="${wheel_radius/2}"/>
+    </inertial>
+  </link>
+
+  <!-- ===== СОЧЛЕНЕНИЕ: base_link → caster_wheel ===== -->
+  <joint name="caster_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_wheel"/>
+    <origin xyz="${base_length/2 - wheel_radius/2} 0 0" rpy="0 0 0"/>
+  </joint>
+
+</robot>
