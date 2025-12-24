@@ -11,7 +11,6 @@ def generate_launch_description():
     xacro_path = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = xacro.process_file(xacro_path).toxml()
 
-    # Gazebo
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
@@ -19,14 +18,12 @@ def generate_launch_description():
         launch_arguments={'gz_args': '-r empty.sdf'}.items(),
     )
 
-    # Robot State Publisher
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[{'robot_description': robot_description, 'use_sim_time': True}]
     )
 
-    # Spawn
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
@@ -34,7 +31,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -45,7 +41,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # **Уникальный узел "восьмёрка"**
     eight_movement = Node(
         package='robot_gazebo_sim',
         executable='eight_movement',
@@ -53,7 +48,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # RViz
     rviz_config = os.path.join(pkg_share, 'rviz', 'robot_view.rviz')
     rviz = Node(
         package='rviz2',
@@ -63,7 +57,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # TF дерево (для проверки)
     view_frames = Node(
         package='tf2_tools',
         executable='view_frames',
@@ -75,7 +68,7 @@ def generate_launch_description():
         robot_state_publisher,
         spawn_entity,
         bridge,
-        eight_movement,  # Автономная восьмёрка!
+        eight_movement, 
         rviz,
         view_frames,
     ])

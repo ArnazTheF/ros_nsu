@@ -33,15 +33,11 @@ def generate_launch_description():
         output='screen'
     )
 
-    # ВАЖНО: направления bridge (] = ROS->GZ, [ = GZ->ROS)  [web:105]
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            # ROS -> Gazebo (заканчивается на ])
             '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
-            
-            # Gazebo -> ROS (начинается с [ )
             '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',

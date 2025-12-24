@@ -20,10 +20,11 @@ Visualization Manager:
       Name: TF
       Value: true
 
-    - Class: rviz_default_plugins/Imu
-      Name: IMU
-      Topic:
-        Value: /imu
+    - Class: rviz_default_plugins/Axes
+      Name: IMU Axes
+      Reference Frame: imu_link  # Ваш frame
+      Axes Length: 0.8
+      Axes Radius: 0.04
       Value: true
 
   Global Options:

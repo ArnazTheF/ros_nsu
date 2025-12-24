@@ -8,10 +8,9 @@ class CircleMovementNode(Node):
     def __init__(self):
         super().__init__('circle_movement')
         
-        # Создаём publisher для /cmd_vel
+    
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 10)
         
-        # Параметры скорости (можно подкрутить, чтобы двигался красиво по кругу)
         self.linear_speed = 0.3  # м/с
         self.angular_speed = 0.8  # рад/с
         
@@ -22,8 +21,8 @@ class CircleMovementNode(Node):
 
     def timer_callback(self):
         msg = Twist()
-        msg.linear.x = self.linear_speed  # вперёд
-        msg.angular.z = self.angular_speed  # поворот влево
+        msg.linear.x = self.linear_speed 
+        msg.angular.z = self.angular_speed  
         self.publisher.publish(msg)
 
 def main(args=None):

@@ -8,12 +8,10 @@ import xacro
 
 def generate_launch_description():
     pkg_share = get_package_share_directory('robot_gazebo_sim')
-    
-    # URDF робота
+
     xacro_path = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = xacro.process_file(xacro_path).toxml()
 
-    # Запуск Gazebo + робота
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
@@ -37,7 +35,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -48,7 +45,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # **Узел движения по кругу** (новый)
     circle_movement = Node(
         package='robot_gazebo_sim',
         executable='circle_movement',
@@ -56,7 +52,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # RViz (опционально)
     rviz_config = os.path.join(pkg_share, 'rviz', 'robot_view.rviz')
     rviz = Node(
         package='rviz2',
@@ -66,7 +61,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # TF дерево (для проверки задания)
     view_frames = ExecuteProcess(
         cmd=['ros2', 'run', 'tf2_tools', 'view_frames'],
         output='screen'
@@ -77,7 +71,7 @@ def generate_launch_description():
         robot_state_publisher,
         spawn_robot,
         bridge,
-        circle_movement,  # Автономное движение по кругу!
+        circle_movement, 
         rviz,
         view_frames,
     ])

@@ -12,8 +12,6 @@ def generate_launch_description():
 
     xacro_path = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = xacro.process_file(xacro_path).toxml()
-
-    # Gazebo с тем же миром, что и в ex01 (gpu_lidar_sensor.sdf)
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'),
@@ -40,7 +38,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge: cmd_vel, joint_states, odom, lidar, depth image
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -49,14 +46,12 @@ def generate_launch_description():
             '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
             '/model/tank_robot/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
-            # depth camera image
             '/depth_camera/image@sensor_msgs/msg/Image[gz.msgs.Image',
         ],
         parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
-    # TF для лидара (как мы добавляли в ex01, если нужно)
     lidar_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -67,7 +62,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # RViz с depth camera
     rviz_config = os.path.join(pkg_share, 'rviz', 'robot_depth_camera.rviz')
     rviz = Node(
         package='rviz2',

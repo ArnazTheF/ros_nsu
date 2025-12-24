@@ -11,6 +11,8 @@
 
   <depend>rclpy</depend>
   <depend>launch</depend>
+  <depend>cv_bridge</depend>
+  <depend>sensor_msgs</depend>
   <depend>launch_ros</depend>
   <depend>robot_state_publisher</depend>
   <depend>ros_gz_sim</depend>

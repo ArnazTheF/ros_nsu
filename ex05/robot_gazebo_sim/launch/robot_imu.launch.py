@@ -13,7 +13,6 @@ def generate_launch_description():
     xacro_path = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = xacro.process_file(xacro_path).toxml()
 
-    # Тот же мир, что в ex01/ex02
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'),
@@ -40,7 +39,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge для управления и сенсоров, включая IMU
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -50,14 +48,12 @@ def generate_launch_description():
             '/model/tank_robot/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
             '/depth_camera/image@sensor_msgs/msg/Image[gz.msgs.Image',
-            # IMU
             '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
         ],
         parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
-    # TF для лидара (как в ex01), можно оставить, чтобы LaserScan тоже работал
     lidar_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -68,7 +64,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # RViz с IMU
     rviz_config = os.path.join(pkg_share, 'rviz', 'robot_imu.rviz')
     rviz = Node(
         package='rviz2',

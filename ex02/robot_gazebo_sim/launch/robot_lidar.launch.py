@@ -11,7 +11,6 @@ def generate_launch_description():
     xacro_path = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description = xacro.process_file(xacro_path).toxml()
 
-    # **Gazebo с миром gpu_lidar_sensor.sdf (с препятствиями)**
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
@@ -39,7 +38,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge для /cmd_vel, /joint_states и **/scan**
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -54,9 +52,6 @@ def generate_launch_description():
         parameters=[{'use_sim_time': True}]
     )
 
-
-
-    # RViz с лидаром
     rviz_config = os.path.join(pkg_share, 'rviz', 'robot_lidar.rviz')
     rviz = Node(
         package='rviz2',

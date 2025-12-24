@@ -25,6 +25,8 @@ setup(
         'console_scripts': [
             'circle_movement = robot_gazebo_sim.circle_movement:main',
             'eight_movement = robot_gazebo_sim.eight_movement:main',
+            'obstacle_avoidance = robot_gazebo_sim.obstacle_avoidance:main',
+            'depth_obstacle_avoidance = robot_gazebo_sim.depth_obstacle_avoidance:main',
         ],
     },
     install_requires=['setuptools'],
